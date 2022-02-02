@@ -1,0 +1,124 @@
+local function set_node_pos(id, new_pos)
+    -- Rotate vector to the opposide direction
+    local rotation = go.get_rotation()
+    rotation.z = -rotation.z
+
+    -- Need local pos
+    local pos_local = new_pos - go.get_position()
+    local pos_rotated = vmath.rotate(rotation, pos_local)
+
+    go.set_position(pos_rotated, id)
+end
+
+local function msg_post_points(message_id, table)
+    msg.post(table[1].id, message_id)
+    msg.post(table[2].id, message_id)
+    msg.post(table[3].id, message_id)
+    msg.post(table[4].id, message_id)
+end
+
+local function points_set_enabled(enabled, table)
+    if enabled then
+        msg_post_points("enable", table)
+        msg_post_points("acquire_input_focus", table)
+    else
+        msg_post_points("release_input_focus", table)
+        msg_post_points("disable", table)
+    end
+end
+
+function init(self)
+    -- Set starting positions of points
+	local pos_1 = go.get_world_position("point_A")
+	local pos_2 = go.get_world_position("point_B")
+	local pos_3 = go.get_world_position("control_A")
+	local pos_4 = go.get_world_position("control_B")
+    self.points = {
+        {pos = pos_1, id = "point_A"},
+        {pos = pos_2, id = "point_B"},
+        {pos = pos_3, id = "control_A"},
+        {pos = pos_4, id = "control_B"}
+    }
+
+    -- Make childs know who is the parent
+	msg.post(self.points[1].id, "set", { index = 1 })
+	msg.post(self.points[2].id, "set", { index = 2 })
+	msg.post(self.points[3].id, "set", { index = 3 })
+	msg.post(self.points[4].id, "set", { index = 4 })
+
+    -- Set material constants
+    msg.post(".", hash("update_point"), {index = 4, new_pos = pos_4})
+
+    -- Is adjust nodes disabled
+    go.property("is_nodes", true)
+    points_set_enabled(self.is_nodes, self.points)
+
+    -- Tangent multiplier
+    go.property("tan_k", 5.0)
+
+    -- Curve thickness
+    go.property("size", 3.0)
+	go.set("#model", "size.x", self.size)
+end
+
+function on_message(self, message_id, message)
+    -- Message.index = self.points index
+    -- Message.points = new position
+    if message_id == hash("update_point") then
+        -- Update node position
+        if self.is_nodes then
+            set_node_pos(self.points[message.index].id, message.new_pos)
+        end
+        
+        -- Set new points
+        self.points[message.index].pos = message.new_pos
+
+        -- Calculate material new constants
+		local pnt = vmath.vector4(self.points[1].pos.x, self.points[1].pos.y,
+            self.points[2].pos.x, self.points[2].pos.y)
+
+		local tan = vmath.vector4(self.points[3].pos.x - self.points[1].pos.x,
+            self.points[3].pos.y - self.points[1].pos.y, 
+            self.points[2].pos.x - self.points[4].pos.x,
+            self.points[2].pos.y - self.points[4].pos.y)
+
+        tan = self.tan_k * tan
+
+        local a = vmath.vector4(
+        (pnt.x - pnt.z) * 2.0 + (tan.x + tan.z),
+        (pnt.z - pnt.x) * 3.0 - (2.0 * tan.x + tan.z),
+        tan.x,
+        pnt.x);
+
+        local b = vmath.vector4(
+        (pnt.y - pnt.w) * 2.0 + (tan.y + tan.w),
+        (pnt.w - pnt.y) * 3.0 - (2.0 * tan.y + tan.w),
+        tan.y,
+        pnt.y);
+
+        -- Set constants
+		go.set("#model", "a", a)
+		go.set("#model", "b", b)
+
+    -- message.enabled = adjust nodes enable
+    elseif message_id == hash("set_node") then
+        points_set_enabled(message.enabled, self.points)
+
+        -- Set sprite position to the actual node position
+        set_node_pos(self.points[1].id, self.points[1].pos)
+        set_node_pos(self.points[2].id, self.points[2].pos)
+        set_node_pos(self.points[3].id, self.points[3].pos)
+        set_node_pos(self.points[4].id, self.points[4].pos)
+
+    -- message.tan_k = new tan_k
+    elseif message_id == hash("set_tan_k") then
+        self.tan_k = message.tan_k
+        -- Update constants
+        msg.post(".", hash("update_point"), {index = 4, new_pos = self.points[4].pos})
+
+    -- message.size = new size
+    elseif message_id == hash("set_size") then
+        self.size = message.size
+        go.set("#model", "size.x", self.size)
+	end
+end

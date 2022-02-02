@@ -1,0 +1,34 @@
+// positions are in LOCAL space
+attribute mediump vec4 position;
+attribute mediump vec2 texcoord0;
+
+uniform mediump mat4 mtx_viewproj;
+
+uniform mediump vec4 a;
+// (a.x, a.y) initial point
+// (a.z, a.w) final point
+
+uniform mediump vec4 b;
+// (b.x, b.y) inital point tangent
+// (b.z, b.w) final point tangent
+
+uniform mediump vec4 size;
+// size.x size
+
+varying mediump vec2 var_texcoord0;
+
+void main()
+{
+    var_texcoord0 = texcoord0;
+
+    float t = 0.5 * (position.x + 1.0); // remap [-1,1] -> [0,1]
+
+    vec4 p = vec4( ((a.x * t + a.y) * t + a.z ) * t + a.w, ((b.x * t + b.y) * t + b.z ) * t + b.w, position.z, 1.0);
+    vec4 v = vec4( (3.0 * a.x * t + 2.0 * a.y) * t + a.z, (3.0 * b.x * t + 2.0 * b.y) * t + b.z, 0.0, 0.0);
+
+    v = normalize(v);
+    v = vec4(v.y,-v.x, 0.0, 0.0);
+        
+    gl_Position = mtx_viewproj * ( p + size.x * position.y  * v );
+}
+

@@ -1,0 +1,41 @@
+-- Only one node can be selected at the same time
+local is_something_selected = false
+
+function init(self)
+    self.parent_url = msg.url()
+	self.selected = false
+	self.index = 0
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("set") then
+		self.index = message.index
+        self.parent_url = sender
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") then
+		if action.pressed and not is_something_selected then
+            local pos = go.get_world_position()
+            local R = 10.0
+            if math.abs(action.x - pos.x) < R and math.abs(action.y - pos.y) < R then
+                self.selected = true
+                is_something_selected = true
+            end
+
+		elseif action.released then
+			self.selected = false
+			is_something_selected = false
+
+		else
+			if self.selected then
+				local d_pos = vmath.vector3(action.dx, action.dy, 0)
+
+                -- Set new material constants. Points needs to be in world space
+                msg.post(self.parent_url, hash("update_point"), {index = self.index, 
+                    new_pos = go.get_world_position() + d_pos})
+			end
+		end
+	end
+end

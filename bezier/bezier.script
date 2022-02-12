@@ -1,3 +1,9 @@
+local UPDATE_POINT = hash("update_point")
+local SET_NODE = hash("set_node")
+local SET_TAN_K = hash("set_tan_k")
+local SET_SIZE = hash("set_size")
+local SET_COLOR = hash("set_color")
+
 local function set_node_pos(id, new_pos)
     -- Rotate vector to the opposide direction
     local rotation = go.get_rotation()
@@ -68,7 +74,7 @@ end
 function on_message(self, message_id, message)
     -- Message.index = self.points index
     -- Message.points = new position
-    if message_id == hash("update_point") then
+    if message_id == UPDATE_POINT then
         -- Update node position
         if self.is_nodes then
             set_node_pos(self.points[message.index].id, message.new_pos)
@@ -105,7 +111,7 @@ function on_message(self, message_id, message)
 		go.set("#model", "b", b)
 
     -- message.enabled = adjust nodes enable
-    elseif message_id == hash("set_node") then
+    elseif message_id == SET_NODE then
         points_set_enabled(message.enabled, self.points)
 
         -- Set sprite position to the actual node position
@@ -115,17 +121,17 @@ function on_message(self, message_id, message)
         set_node_pos(self.points[4].id, self.points[4].pos)
 
     -- message.tan_k = new tan_k
-    elseif message_id == hash("set_tan_k") then
+    elseif message_id == SET_TAN_K then
         self.tan_k = message.tan_k
         -- Update constants
         msg.post(".", hash("update_point"), {index = 4, new_pos = self.points[4].pos})
 
     -- message.size = new size
-    elseif message_id == hash("set_size") then
+    elseif message_id == SET_SIZE then
         self.size = message.size
         go.set("#model", "size.x", self.size)
 
-    elseif message_id == hash("set_color") then
+    elseif message_id == SET_COLOR then
         self.color = message.color
         go.set("#model", "tint", self.color)
 	end

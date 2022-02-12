@@ -54,3 +54,9 @@ Updates size of the curve.
 
 _PARAMETERS_
 * __size__ <kbd>float</kbd> - New size.
+
+#### set_color
+Updates color of the curve.
+
+_PARAMETERS_
+* __color__ <kbd>vec4</kbd> - New color.

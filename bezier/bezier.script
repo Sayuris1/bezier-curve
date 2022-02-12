@@ -59,6 +59,10 @@ function init(self)
     -- Curve thickness
     go.property("size", 3.0)
 	go.set("#model", "size.x", self.size)
+
+    -- Color
+    go.property("color", vmath.vector4(0, 0, 0, 1))
+    go.set("#model", "tint", self.color)
 end
 
 function on_message(self, message_id, message)
@@ -120,5 +124,9 @@ function on_message(self, message_id, message)
     elseif message_id == hash("set_size") then
         self.size = message.size
         go.set("#model", "size.x", self.size)
+
+    elseif message_id == hash("set_color") then
+        self.color = message.color
+        go.set("#model", "tint", self.color)
 	end
 end

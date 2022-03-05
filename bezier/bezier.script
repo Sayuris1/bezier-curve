@@ -35,15 +35,21 @@ end
 
 function init(self)
     -- Set starting positions of points
-	local pos_1 = go.get_world_position("point_A")
-	local pos_2 = go.get_world_position("point_B")
-	local pos_3 = go.get_world_position("control_A")
-	local pos_4 = go.get_world_position("control_B")
+    go.property("pos_1", vmath.vector3(0))
+    go.property("pos_1", vmath.vector3(0))
+    go.property("pos_1", vmath.vector3(0))
+    go.property("pos_1", vmath.vector3(0))
+
+	self.pos_1 = go.get_world_position("point_A")
+	self.pos_2 = go.get_world_position("point_B")
+	self.pos_3 = go.get_world_position("control_A")
+    self.pos_4 = go.get_world_position("control_B")
+    
     self.points = {
-        {pos = pos_1, id = "point_A"},
-        {pos = pos_2, id = "point_B"},
-        {pos = pos_3, id = "control_A"},
-        {pos = pos_4, id = "control_B"}
+        {pos = self.pos_1, id = "point_A"},
+        {pos = self.pos_2, id = "point_B"},
+        {pos = self.pos_3, id = "control_A"},
+        {pos = self.pos_4, id = "control_B"}
     }
 
     -- Make childs know who is the parent
@@ -51,9 +57,6 @@ function init(self)
 	msg.post(self.points[2].id, "set", { index = 2 })
 	msg.post(self.points[3].id, "set", { index = 3 })
 	msg.post(self.points[4].id, "set", { index = 4 })
-
-    -- Set material constants
-    msg.post(".", hash("update_point"), {index = 4, new_pos = pos_4})
 
     -- Is adjust nodes disabled
     go.property("is_nodes", true)
@@ -71,6 +74,35 @@ function init(self)
     go.set("#model", "tint", self.color)
 end
 
+function update(self, dt)
+	-- Calculate material new constants
+    local pnt = vmath.vector4(self.points[1].pos.x, self.points[1].pos.y,
+        self.points[2].pos.x, self.points[2].pos.y)
+
+    local tan = vmath.vector4(self.points[3].pos.x - self.points[1].pos.x,
+        self.points[3].pos.y - self.points[1].pos.y,
+        self.points[2].pos.x - self.points[4].pos.x,
+        self.points[2].pos.y - self.points[4].pos.y)
+
+    tan = self.tan_k * tan
+
+    local a = vmath.vector4(
+    (pnt.x - pnt.z) * 2.0 + (tan.x + tan.z),
+    (pnt.z - pnt.x) * 3.0 - (2.0 * tan.x + tan.z),
+    tan.x,
+    pnt.x);
+
+    local b = vmath.vector4(
+    (pnt.y - pnt.w) * 2.0 + (tan.y + tan.w),
+    (pnt.w - pnt.y) * 3.0 - (2.0 * tan.y + tan.w),
+    tan.y,
+    pnt.y);
+
+    -- Set constants
+    go.set("#model", "a", a)
+    go.set("#model", "b", b)
+end
+
 function on_message(self, message_id, message)
     -- Message.index = self.points index
     -- Message.points = new position
@@ -79,36 +111,9 @@ function on_message(self, message_id, message)
         if self.is_nodes then
             set_node_pos(self.points[message.index].id, message.new_pos)
         end
-        
+
         -- Set new points
         self.points[message.index].pos = message.new_pos
-
-        -- Calculate material new constants
-		local pnt = vmath.vector4(self.points[1].pos.x, self.points[1].pos.y,
-            self.points[2].pos.x, self.points[2].pos.y)
-
-		local tan = vmath.vector4(self.points[3].pos.x - self.points[1].pos.x,
-            self.points[3].pos.y - self.points[1].pos.y, 
-            self.points[2].pos.x - self.points[4].pos.x,
-            self.points[2].pos.y - self.points[4].pos.y)
-
-        tan = self.tan_k * tan
-
-        local a = vmath.vector4(
-        (pnt.x - pnt.z) * 2.0 + (tan.x + tan.z),
-        (pnt.z - pnt.x) * 3.0 - (2.0 * tan.x + tan.z),
-        tan.x,
-        pnt.x);
-
-        local b = vmath.vector4(
-        (pnt.y - pnt.w) * 2.0 + (tan.y + tan.w),
-        (pnt.w - pnt.y) * 3.0 - (2.0 * tan.y + tan.w),
-        tan.y,
-        pnt.y);
-
-        -- Set constants
-		go.set("#model", "a", a)
-		go.set("#model", "b", b)
 
     -- message.enabled = adjust nodes enable
     elseif message_id == SET_NODE then

@@ -36,9 +36,9 @@ end
 function init(self)
     -- Set starting positions of points
     go.property("pos_1", vmath.vector3(0))
-    go.property("pos_1", vmath.vector3(0))
-    go.property("pos_1", vmath.vector3(0))
-    go.property("pos_1", vmath.vector3(0))
+    go.property("pos_2", vmath.vector3(0))
+    go.property("pos_3", vmath.vector3(0))
+    go.property("pos_4", vmath.vector3(0))
 
 	self.pos_1 = go.get_world_position("point_A")
 	self.pos_2 = go.get_world_position("point_B")
@@ -76,13 +76,13 @@ end
 
 function update(self, dt)
 	-- Calculate material new constants
-    local pnt = vmath.vector4(self.points[1].pos.x, self.points[1].pos.y,
-        self.points[2].pos.x, self.points[2].pos.y)
+    local pnt = vmath.vector4(self.pos_1.x, self.pos_1.y,
+        self.pos_2.x, self.pos_2.y)
 
-    local tan = vmath.vector4(self.points[3].pos.x - self.points[1].pos.x,
-        self.points[3].pos.y - self.points[1].pos.y,
-        self.points[2].pos.x - self.points[4].pos.x,
-        self.points[2].pos.y - self.points[4].pos.y)
+    local tan = vmath.vector4(self.pos_3.x - self.pos_1.x,
+        self.pos_3.y - self.pos_1.y,
+        self.pos_2.x - self.pos_4.x,
+        self.pos_2.y - self.pos_4.y)
 
     tan = self.tan_k * tan
 
@@ -113,7 +113,7 @@ function on_message(self, message_id, message)
         end
 
         -- Set new points
-        self.points[message.index].pos = message.new_pos
+        self["pos_" .. message.index] = message.new_pos
 
     -- message.enabled = adjust nodes enable
     elseif message_id == SET_NODE then
